@@ -153,7 +153,10 @@ def apply_kl_penalty(data: DataProto, kl_ctrl: core_algos.AdaptiveKLController, 
     beta = kl_ctrl.value
 
     token_level_rewards = token_level_scores - beta * kld
-
+    if beta == 1:
+        token_level_rewards = - kld
+        print("Using only reverse KL penalty as reward!")
+    
     current_kl = masked_mean(kld, mask=response_mask, axis=-1)  # average over sequence
     current_kl = torch.mean(current_kl, dim=0).item()
 
@@ -232,6 +235,10 @@ def compute_advantage(
                 config.pf_ppo.get("reweight_method"),
                 config.pf_ppo.get("weight_pow"),
             )
+    elif adv_estimator == AdvantageEstimator.OPD:
+        import verl.utils.torch_functional as verl_F
+        data.batch["advantages"] = verl_F.masked_whiten(data.batch["token_level_rewards"], data.batch["response_mask"])
+        data.batch["returns"] = verl_F.masked_whiten(data.batch["token_level_rewards"], data.batch["response_mask"])
     elif adv_estimator == AdvantageEstimator.GRPO:
         # Initialize the mask for GRPO calculation
         grpo_calculation_mask = data.batch["response_mask"]

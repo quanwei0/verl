@@ -13,6 +13,9 @@ defaults:
 # Target class for this configuration
 _target_: verl.workers.config.FSDPActorConfig
 
+model: 
+  path: ~/models/deepseek-llm-7b-chat
+
 # fsdp config
 fsdp_config:
 
