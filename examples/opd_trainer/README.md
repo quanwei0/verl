@@ -6,9 +6,9 @@
 conda create -n verl-vllm python=3.12 -y
 conda activate verl-vllm
 
-pip install vllm==0.8.5
+pip install vllm==0.11.0
 pip install -e ".[vllm]"
-pip install flash-attn==2.7.3 --no-build-isolation --no-cache-dir
+pip install flash-attn --no-build-isolation --no-cache-dir
 
 pip install polars
 ```
