@@ -6,13 +6,16 @@ set -x
 export WANDB_API_KEY="810f91e58aa0fd1d03b11c60b0d1cffbb1d941f4"
 export WANDB_ENTITY="rl_agent"
 
+
 # https://github.com/NovaSky-AI/SkyRL/blob/main/skyrl-train/examples/on_policy_distillation/run_on_policy_distill_math_qwen3_4b.sh
 
-DATA_DIR="$HOME/data/gsm8k"
-TRAIN_FILE="$DATA_DIR/train.parquet"
-TEST_FILE="$DATA_DIR/test.parquet"
-TRAIN_BATCH_SIZE=256
+DATA_DIR="$HOME/data/dapo"
+TRAIN_FILE="$DATA_DIR/dapo-math-17k-cleaned.parquet"
+TEST_FILE="$DATA_DIR/aime-2024-cleaned.parquet"
+TRAIN_BATCH_SIZE=512
 
+PROJECT_NAME="verl_opd_dapo_math"
+EXPERIMENT_NAME="qwen3_32b_opd"
 
 python3 -m verl.trainer.main_ppo \
     algorithm.adv_estimator=opd \
@@ -20,10 +23,10 @@ python3 -m verl.trainer.main_ppo \
     data.val_files=$TEST_FILE \
     data.train_batch_size=$TRAIN_BATCH_SIZE \
     data.max_prompt_length=2048 \
-    data.max_response_length=8192 \
+    data.max_response_length=16384 \
     data.filter_overlong_prompts=True \
     data.truncation='error' \
-    actor_rollout_ref.model.path=Qwen/Qwen3-4B \
+    actor_rollout_ref.model.path=Qwen/Qwen3-4B-Base \
     actor_rollout_ref.actor.optim.lr=1e-5 \
     actor_rollout_ref.model.use_remove_padding=True \
     actor_rollout_ref.actor.ppo_mini_batch_size=$TRAIN_BATCH_SIZE \
@@ -39,18 +42,24 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.name=vllm \
     actor_rollout_ref.rollout.gpu_memory_utilization=0.6 \
     actor_rollout_ref.rollout.n=1 \
+    actor_rollout_ref.rollout.temperature=1.0 \
+    actor_rollout_ref.rollout.top_p=1 \
+    actor_rollout_ref.rollout.val_kwargs.n=16 \
+    actor_rollout_ref.rollout.val_kwargs.temperature=1.0 \
+    actor_rollout_ref.rollout.val_kwargs.top_p=0.7 \
     actor_rollout_ref.ref.log_prob_micro_batch_size_per_gpu=4 \
     actor_rollout_ref.ref.fsdp_config.param_offload=True \
-    actor_rollout_ref.ref.model.path=Qwen/Qwen3-32B \
+    +actor_rollout_ref.ref.model.path=BytedTsinghua-SIA/DAPO-Qwen-32B \
     algorithm.use_kl_in_reward=True \
     algorithm.kl_ctrl.kl_coef=1 \
     reward_model.reward_manager=dapo \
+    trainer.val_only=False \
     trainer.critic_warmup=0 \
     trainer.logger='["console","wandb"]' \
-    trainer.project_name='verl_opd_example_gsm8k' \
-    trainer.experiment_name='qwen3_4b_32b_opd' \
+    trainer.project_name=$PROJECT_NAME \
+    trainer.experiment_name=$EXPERIMENT_NAME \
     trainer.n_gpus_per_node=8 \
     trainer.nnodes=1 \
     trainer.save_freq=-1 \
-    trainer.test_freq=50 \
+    trainer.test_freq=-1 \
     trainer.total_epochs=20 $@

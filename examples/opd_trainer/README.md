@@ -20,7 +20,7 @@ bash examples/opd_trainer/prepare_dapo_data.sh
 
 ## Run OPD Trainer
 
-distil qwen3 4b from qwen3 32b
+distil Qwen3 4B from DAPO-Qwen-32B
 ```bash
-bash examples/opd_trainer/run_qwen3-4b_opd.sh
+bash examples/opd_trainer/run_opd.sh
 ```
