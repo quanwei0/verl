@@ -3,15 +3,14 @@
 
 set -x
 
-export WANDB_API_KEY="810f91e58aa0fd1d03b11c60b0d1cffbb1d941f4"
-export WANDB_ENTITY="rl_agent"
+export WANDB_API_KEY="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"
 
 # https://github.com/NovaSky-AI/SkyRL/blob/main/skyrl-train/examples/on_policy_distillation/run_on_policy_distill_math_qwen3_4b.sh
 
-DATA_DIR="$HOME/data/gsm8k"
-TRAIN_FILE="$DATA_DIR/train.parquet"
-TEST_FILE="$DATA_DIR/test.parquet"
-TRAIN_BATCH_SIZE=256
+DATA_DIR="$HOME/data/dapo"
+TRAIN_FILE="$DATA_DIR/dapo-math-17k-cleaned.parquet"
+TEST_FILE="$DATA_DIR/aime-2024-cleaned.parquet"
+TRAIN_BATCH_SIZE=512
 
 
 python3 -m verl.trainer.main_ppo \
@@ -20,7 +19,7 @@ python3 -m verl.trainer.main_ppo \
     data.val_files=$TEST_FILE \
     data.train_batch_size=$TRAIN_BATCH_SIZE \
     data.max_prompt_length=2048 \
-    data.max_response_length=8192 \
+    data.max_response_length=4096 \
     data.filter_overlong_prompts=True \
     data.truncation='error' \
     actor_rollout_ref.model.path=Qwen/Qwen3-4B \
@@ -39,18 +38,20 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.name=vllm \
     actor_rollout_ref.rollout.gpu_memory_utilization=0.6 \
     actor_rollout_ref.rollout.n=1 \
+    actor_rollout_ref.rollout.val_kwargs.n=16 \
     actor_rollout_ref.ref.log_prob_micro_batch_size_per_gpu=4 \
     actor_rollout_ref.ref.fsdp_config.param_offload=True \
     actor_rollout_ref.ref.model.path=Qwen/Qwen3-32B \
     algorithm.use_kl_in_reward=True \
     algorithm.kl_ctrl.kl_coef=1 \
     reward_model.reward_manager=dapo \
+    trainer.val_only=True \
     trainer.critic_warmup=0 \
     trainer.logger='["console","wandb"]' \
-    trainer.project_name='verl_opd_example_gsm8k' \
+    trainer.project_name='verl_opd_dapo_math' \
     trainer.experiment_name='qwen3_4b_32b_opd' \
     trainer.n_gpus_per_node=8 \
     trainer.nnodes=1 \
     trainer.save_freq=-1 \
-    trainer.test_freq=50 \
+    trainer.test_freq=-1 \
     trainer.total_epochs=20 $@
