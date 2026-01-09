@@ -26,7 +26,7 @@ python3 -m verl.trainer.main_ppo \
     data.val_files=$TEST_FILE \
     data.train_batch_size=$TRAIN_BATCH_SIZE \
     data.max_prompt_length=2048 \
-    data.max_response_length=16384 \
+    data.max_response_length=8192 \
     data.filter_overlong_prompts=True \
     data.truncation='error' \
     actor_rollout_ref.model.path=$STUDENT_MODEL \

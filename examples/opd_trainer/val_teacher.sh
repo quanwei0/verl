@@ -27,7 +27,7 @@ python3 -m verl.trainer.main_ppo \
     data.max_response_length=16384 \
     data.filter_overlong_prompts=True \
     data.truncation='error' \
-    actor_rollout_ref.model.path=$STUDENT_MODEL \
+    actor_rollout_ref.model.path=$TEACHER_MODEL \
     actor_rollout_ref.actor.optim.lr=1e-5 \
     actor_rollout_ref.model.use_remove_padding=True \
     actor_rollout_ref.actor.ppo_mini_batch_size=$TRAIN_BATCH_SIZE \
@@ -50,7 +50,6 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.val_kwargs.top_p=0.7 \
     actor_rollout_ref.ref.log_prob_micro_batch_size_per_gpu=2 \
     actor_rollout_ref.ref.fsdp_config.param_offload=True \
-    +actor_rollout_ref.ref.model.path=$TEACHER_MODEL \
     algorithm.use_kl_in_reward=True \
     algorithm.kl_ctrl.kl_coef=1 \
     reward_model.reward_manager=dapo \
