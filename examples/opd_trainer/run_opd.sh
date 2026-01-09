@@ -17,7 +17,7 @@ TRAIN_BATCH_SIZE=512
 PROJECT_NAME="verl_opd_dapo_math"
 EXPERIMENT_NAME="qwen3_32b_opd"
 
-STUDENT_MODEL="Qwen/Qwen3-4B-Base"
+STUDENT_MODEL="Qwen/Qwen3-4B"
 TEACHER_MODEL="BytedTsinghua-SIA/DAPO-Qwen-32B"
 
 python3 -m verl.trainer.main_ppo \
@@ -52,7 +52,7 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.val_kwargs.top_p=0.7 \
     actor_rollout_ref.ref.log_prob_micro_batch_size_per_gpu=2 \
     actor_rollout_ref.ref.fsdp_config.param_offload=True \
-    +actor_rollout_ref.ref.model.path=$TEACHER_MODEL \
+    ++actor_rollout_ref.ref.model.path=$TEACHER_MODEL \
     algorithm.use_kl_in_reward=True \
     algorithm.kl_ctrl.kl_coef=1 \
     reward_model.reward_manager=dapo \
