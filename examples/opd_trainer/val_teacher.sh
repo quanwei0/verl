@@ -24,7 +24,7 @@ python3 -m verl.trainer.main_ppo \
     data.val_files=$TEST_FILE \
     data.train_batch_size=$TRAIN_BATCH_SIZE \
     data.max_prompt_length=2048 \
-    data.max_response_length=16384 \
+    data.max_response_length=4096 \
     data.filter_overlong_prompts=True \
     data.truncation='error' \
     actor_rollout_ref.model.path=$TEACHER_MODEL \
@@ -53,7 +53,7 @@ python3 -m verl.trainer.main_ppo \
     algorithm.use_kl_in_reward=True \
     algorithm.kl_ctrl.kl_coef=1 \
     reward_model.reward_manager=dapo \
-    trainer.val_only=False \
+    trainer.val_only=True \
     trainer.critic_warmup=0 \
     trainer.logger='["console","wandb"]' \
     trainer.project_name=$PROJECT_NAME \
