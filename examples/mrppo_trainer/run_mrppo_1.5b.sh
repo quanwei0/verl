@@ -4,7 +4,7 @@ export WANDB_API_KEY="810f91e58aa0fd1d03b11c60b0d1cffbb1d941f4"
 export WANDB_ENTITY="rl_agent"
 
 train_path=$HOME/data/dapo/dapo-math-17k.parquet
-test_path=$HOME/data/dapo/aime-2024.parquet
+test_path=$HOME/data/dapo/aime-2024-cleaned.parquet
 
 train_files="['$train_path']"
 test_files="['$test_path']"
@@ -51,6 +51,8 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.name=vllm \
     actor_rollout_ref.rollout.gpu_memory_utilization=0.5 \
     actor_rollout_ref.rollout.calculate_log_probs=True \
+    actor_rollout_ref.rollout.val_kwargs.n=16 \
+    actor_rollout_ref.rollout.val_kwargs.do_sample=True \
     actor_rollout_ref.rollout.val_kwargs.temperature=0.7 \
     actor_rollout_ref.rollout.val_kwargs.top_p=0.95 \
     critic.enable=True \
@@ -69,7 +71,7 @@ python3 -m verl.trainer.main_ppo \
     trainer.experiment_name="$EXPERIMENT_NAME" \
     trainer.n_gpus_per_node=$N_GPUS_PER_NODE \
     trainer.nnodes=1 \
-    trainer.val_before_train=False \
+    trainer.val_before_train=True \
     trainer.val_only=False \
     trainer.save_freq=50 \
     trainer.test_freq=20 \
