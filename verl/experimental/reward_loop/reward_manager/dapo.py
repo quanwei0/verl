@@ -108,7 +108,7 @@ class DAPORewardManager(RewardManagerBase):
         answer_reward = score
         length_reward = 0.0
         if self.use_length_reward and self.max_resp_len is not None:
-            length_reward = 0.0 if valid_response_length >= self.max_resp_len else 1.0
+            length_reward = valid_response_length / self.max_resp_len if valid_response_length <= self.max_resp_len else 0.0
 
         reward = answer_reward + length_reward
         reward_extra_info["answer_reward"] = answer_reward
