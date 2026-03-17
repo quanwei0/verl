@@ -1,0 +1,79 @@
+set -x
+
+export WANDB_API_KEY="810f91e58aa0fd1d03b11c60b0d1cffbb1d941f4"
+export WANDB_ENTITY="rl_agent"
+
+train_path=$HOME/data/dapo/dapo-math-17k.parquet
+test_path=$HOME/data/dapo/aime-2024.parquet
+
+train_files="['$train_path']"
+test_files="['$test_path']"
+
+PROJECT_NAME=dapo-math
+EXPERIMENT_NAME="r1-1.5b-ppo"
+
+
+N_GPUS_PER_NODE=4
+MODEL_PATH=deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B
+MAX_RESPONSE_LENGTH=8192
+MAX_RESPONSE_LENGTH2=4096
+
+ROLLOUT_IS="token"
+ROLLOUT_IS_THRESHOLD=2.0
+
+N_VALUE_HEADS=1
+
+
+python3 -m verl.trainer.main_ppo \
+    algorithm.adv_estimator=gae \
+    algorithm.rollout_correction.rollout_is=${ROLLOUT_IS} \
+    algorithm.rollout_correction.rollout_is_threshold=${ROLLOUT_IS_THRESHOLD} \
+    data.train_files="$train_files" \
+    data.val_files="$test_files" \
+    data.train_batch_size=1024 \
+    data.max_prompt_length=2048 \
+    data.max_response_length=$MAX_RESPONSE_LENGTH \
+    data.filter_overlong_prompts=True \
+    data.filter_overlong_prompts_workers=$(nproc) \
+    data.truncation='error' \
+    actor_rollout_ref.model.path=$MODEL_PATH \
+    actor_rollout_ref.actor.optim.lr=1e-6 \
+    actor_rollout_ref.model.use_remove_padding=True \
+    actor_rollout_ref.actor.ppo_mini_batch_size=256 \
+    actor_rollout_ref.actor.ppo_micro_batch_size_per_gpu=4 \
+    actor_rollout_ref.model.enable_gradient_checkpointing=True \
+    actor_rollout_ref.actor.fsdp_config.param_offload=True \
+    actor_rollout_ref.actor.fsdp_config.optimizer_offload=True \
+    actor_rollout_ref.actor.use_kl_loss=False \
+    actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu=16 \
+    actor_rollout_ref.rollout.tensor_model_parallel_size=4 \
+    actor_rollout_ref.rollout.name=vllm \
+    actor_rollout_ref.rollout.gpu_memory_utilization=0.5 \
+    actor_rollout_ref.rollout.calculate_log_probs=True \
+    actor_rollout_ref.rollout.val_kwargs.temperature=0.7 \
+    actor_rollout_ref.rollout.val_kwargs.top_p=0.95 \
+    critic.optim.lr=1e-5 \
+    critic.model.use_remove_padding=True \
+    critic.model.path=$MODEL_PATH \
+    critic.model.enable_gradient_checkpointing=True \
+    critic.ppo_micro_batch_size_per_gpu=4 \
+    critic.model.fsdp_config.param_offload=True \
+    critic.model.fsdp_config.optimizer_offload=True \
+    +critic.model.override_config.n_value_heads=$N_VALUE_HEADS \
+    algorithm.use_kl_in_reward=False \
+    trainer.critic_warmup=0 \
+    trainer.logger='["console","wandb"]' \
+    trainer.project_name="$PROJECT_NAME" \
+    trainer.experiment_name="$EXPERIMENT_NAME" \
+    trainer.n_gpus_per_node=$N_GPUS_PER_NODE \
+    trainer.nnodes=1 \
+    trainer.val_before_train=False \
+    trainer.val_only=False \
+    trainer.save_freq=50 \
+    trainer.test_freq=20 \
+    reward_model.reward_manager=dapo \
+    +reward_model.reward_kwargs.use_length_reward=True \
+    +reward_model.reward_kwargs.max_resp_len=$MAX_RESPONSE_LENGTH2 \
+    "actor_rollout_ref.actor.checkpoint.save_contents=[model,hf_model,optimizer,extra]" \
+    "critic.checkpoint.save_contents=[model,hf_model,optimizer,extra]" \
+    trainer.total_epochs=1 $@

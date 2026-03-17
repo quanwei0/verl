@@ -108,6 +108,7 @@ class AdvantageEstimator(str, Enum):
     OPTIMAL_TOKEN_BASELINE = "optimal_token_baseline"
     TIR_OPTIMAL_TOKEN_BASELINE = "tir_optimal_token_baseline"
     GDPO = "gdpo"
+    MRPPO = "mrppo"
 
 
 ADV_ESTIMATOR_REGISTRY: dict[str, Any] = {}
@@ -260,6 +261,54 @@ def compute_gae_advantage_return(
 
         returns = advantages + values
         advantages = verl_F.masked_whiten(advantages, response_mask)
+    return advantages, returns
+
+
+@register_adv_est("mrppo")
+def compute_mrppo_advantage_return(
+    token_level_rewards: torch.Tensor,
+    values: torch.Tensor,
+    response_mask: torch.Tensor,
+    gamma: torch.Tensor,
+    lam: torch.Tensor,
+):
+    """Multi-reward PPO (MRPPO) GAE. Supports multi-head rewards and values.
+
+    Args:
+        token_level_rewards: shape (bs, response_length, n_value_heads)
+        values: shape (bs, response_length, n_value_heads)
+        response_mask: shape (bs, response_length)
+        gamma: discount factor
+        lam: GAE lambda
+
+    Returns:
+        advantages: (bs, response_length) — summed across heads after whitening
+        returns: (bs, response_length, n_value_heads)
+    """
+    with torch.no_grad():
+        nextvalues = 0
+        lastgaelam = 0
+        advantages_reversed = []
+        gen_len = token_level_rewards.shape[1]
+
+        for t in reversed(range(gen_len)):
+            mask_t = response_mask[:, t].unsqueeze(-1)  # (B, 1) for broadcasting with (B, n_value_heads)
+            delta = token_level_rewards[:, t] + gamma * nextvalues - values[:, t]
+            lastgaelam_ = delta + gamma * lam * lastgaelam
+
+            nextvalues = values[:, t] * mask_t + (1 - mask_t) * nextvalues
+            lastgaelam = lastgaelam_ * mask_t + (1 - mask_t) * lastgaelam
+
+            advantages_reversed.append(lastgaelam)
+        advantages = torch.stack(advantages_reversed[::-1], dim=1)  # (B, L, n_value_heads)
+
+        returns = advantages + values  # (B, L, n_value_heads)
+
+        # whiten and sum across heads to get scalar advantage for actor
+        adv_mask = response_mask.unsqueeze(-1).expand_as(advantages)
+        advantages = verl_F.masked_whiten(advantages, adv_mask)
+        advantages = advantages.sum(dim=-1)  # (B, L)
+        advantages = advantages * response_mask
     return advantages, returns
 
 
@@ -2116,6 +2165,9 @@ def compute_value_loss(
     vf_losses1 = (vpreds - returns) ** 2
     vf_losses2 = (vpredclipped - returns) ** 2
     clipped_vf_losses = torch.max(vf_losses1, vf_losses2)
+    # broadcast response_mask to match (B, L, n_value_heads) if needed
+    if clipped_vf_losses.dim() > response_mask.dim():
+        response_mask = response_mask.unsqueeze(-1).expand_as(clipped_vf_losses)
     vf_loss = 0.5 * agg_loss(loss_mat=clipped_vf_losses, loss_mask=response_mask, loss_agg_mode=loss_agg_mode)
     vf_clipfrac = verl_F.masked_mean(torch.gt(vf_losses2, vf_losses1).float(), response_mask)
     return vf_loss, vf_clipfrac

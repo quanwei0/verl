@@ -33,6 +33,8 @@ class DAPORewardManager(RewardManagerBase):
         overlong_buffer_cfg = config.reward.get("reward_kwargs", {}).get("overlong_buffer_cfg", None)
         self.overlong_buffer_cfg = overlong_buffer_cfg
         self.max_resp_len = config.reward.get("reward_kwargs", {}).get("max_resp_len", None)
+        self.use_length_reward = config.reward.get("reward_kwargs", {}).get("use_length_reward", False)
+
         self.reward_router_address = reward_router_address
         self.reward_model_tokenizer = reward_model_tokenizer
 
@@ -103,7 +105,16 @@ class DAPORewardManager(RewardManagerBase):
             score = result
             reward_extra_info["acc"] = score
 
-        reward = score
+        answer_reward = score
+        length_reward = 0.0
+        if self.use_length_reward and self.max_resp_len is not None:
+            length_reward = 0.0 if valid_response_length >= self.max_resp_len else 1.0
+
+        reward = answer_reward + length_reward
+        reward_extra_info["answer_reward"] = answer_reward
+        reward_extra_info["length_reward"] = length_reward
+        reward_extra_info["total_reward"] = reward
+
 
         if self.overlong_buffer_cfg is not None and self.overlong_buffer_cfg.enable:
             overlong_buffer_len = self.overlong_buffer_cfg.len

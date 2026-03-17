@@ -103,7 +103,11 @@ def compute_data_metrics(batch: DataProto, use_critic: bool = True) -> dict[str,
             - num_turns/mean, max, min: Statistics about the number of multi-turn conversations
     """
     sequence_score = batch.batch["token_level_scores"].sum(-1)
-    sequence_reward = batch.batch["token_level_rewards"].sum(-1)
+    token_level_rewards = batch.batch["token_level_rewards"]
+    # sum over heads first if multi-head, then sum over tokens to get sequence-level reward
+    if token_level_rewards.dim() == 3:
+        token_level_rewards = token_level_rewards.sum(-1)
+    sequence_reward = token_level_rewards.sum(-1)
 
     advantages = batch.batch["advantages"]
     returns = batch.batch["returns"]
@@ -134,11 +138,14 @@ def compute_data_metrics(batch: DataProto, use_critic: bool = True) -> dict[str,
     reward_min = torch.min(non_aborted_sequence_reward).detach().item()
 
     valid_adv = torch.masked_select(advantages, response_mask)
-    valid_returns = torch.masked_select(returns, response_mask)
+    # flatten multi-head returns/values to (B, L) by averaging heads for logging
+    returns_2d = returns.mean(dim=-1) if returns.dim() == 3 else returns
+    valid_returns = torch.masked_select(returns_2d, response_mask)
 
     if use_critic:
         values = batch.batch["values"]
-        valid_values = torch.masked_select(values, response_mask)
+        values_2d = values.mean(dim=-1) if values.dim() == 3 else values
+        valid_values = torch.masked_select(values_2d, response_mask)
         return_diff_var = torch.var(valid_returns - valid_values)
         return_var = torch.var(valid_returns)
 

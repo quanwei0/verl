@@ -174,6 +174,16 @@ def compute_advantage(
                 config.pf_ppo.get("reweight_method"),
                 config.pf_ppo.get("weight_pow"),
             )
+    elif adv_estimator == AdvantageEstimator.MRPPO:
+        advantages, returns = core_algos.get_adv_estimator_fn("mrppo")(
+            token_level_rewards=data.batch["token_level_rewards"],
+            values=data.batch["values"],
+            response_mask=data.batch["response_mask"],
+            gamma=gamma,
+            lam=lam,
+        )
+        data.batch["advantages"] = advantages
+        data.batch["returns"] = returns
     elif adv_estimator == AdvantageEstimator.GRPO:
         # Initialize the mask for GRPO calculation
         grpo_calculation_mask = data.batch["response_mask"]
@@ -1455,13 +1465,34 @@ class RayPPOTrainer:
                             batch.non_tensor_batch.update({k: np.array(v) for k, v in reward_extra_infos_dict.items()})
 
                         # compute rewards. apply_kl_penalty if available
+                        assert not (
+                            self.config.algorithm.adv_estimator == AdvantageEstimator.MRPPO
+                            and self.config.algorithm.use_kl_in_reward
+                        ), "mrppo does not support use_kl_in_reward"
                         if self.config.algorithm.use_kl_in_reward:
                             batch, kl_metrics = apply_kl_penalty(
                                 batch, kl_ctrl=self.kl_ctrl_in_reward, kl_penalty=self.config.algorithm.kl_penalty
                             )
                             metrics.update(kl_metrics)
                         else:
-                            batch.batch["token_level_rewards"] = batch.batch["token_level_scores"]
+                            if self.config.algorithm.adv_estimator == "mrppo":
+                                token_level_scores = batch.batch["token_level_scores"]  # (B, L)
+                                eos_mask = (token_level_scores != 0).float()  # (B, L)
+                                # each key is a per-sample scalar reward in non_tensor_batch, placed at EOS
+                                mrppo_reward_keys = OmegaConf.select(self.config, "algorithm.mrppo_reward_keys", default=[])
+                                reward_tensors = []
+                                for key in mrppo_reward_keys:
+                                    r = torch.tensor(
+                                        batch.non_tensor_batch[key],
+                                        dtype=torch.float32,
+                                        device=token_level_scores.device,
+                                    )  # (B,)
+                                    reward_tensors.append(eos_mask * r.unsqueeze(-1))  # (B, L)
+                                batch.batch["token_level_rewards"] = torch.stack(
+                                    reward_tensors, dim=-1
+                                )  # (B, L, n_value_heads)
+                            else:
+                                batch.batch["token_level_rewards"] = batch.batch["token_level_scores"]
 
                         # Compute rollout correction: IS weights, rejection sampling, and metrics
                         # Only runs in decoupled mode (computes once per batch using stable π_old)
@@ -1586,6 +1617,10 @@ class RayPPOTrainer:
                             metrics[f"gdpo/{key}/std"] = float(np.std(vals))
                             metrics[f"gdpo/{key}/max"] = float(np.max(vals))
                             metrics[f"gdpo/{key}/min"] = float(np.min(vals))
+                for key in ("answer_reward", "length_reward", "total_reward"):
+                    if key in batch.non_tensor_batch:
+                        vals = np.asarray(batch.non_tensor_batch[key], dtype=np.float32)
+                        metrics[f"reward/{key}/mean"] = float(np.mean(vals))
                 metrics.update(compute_timing_metrics(batch=batch, timing_raw=timing_raw))
                 # TODO: implement actual tflpo and theoretical tflpo
                 n_gpus = self.resource_pool_manager.get_n_gpus()

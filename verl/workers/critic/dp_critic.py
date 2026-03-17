@@ -113,8 +113,10 @@ class DataParallelPPOCritic(BasePPOCritic):
                     )
 
                 # pad it back
-                values = pad_input(values_rmpad, indices=indices, batch=batch, seqlen=seqlen).squeeze(-1)
+                values = pad_input(values_rmpad, indices=indices, batch=batch, seqlen=seqlen)
                 values = values[:, -response_length - 1 : -1]
+                if values.shape[-1] == 1:
+                    values = values.squeeze(-1)
             else:
                 output = self.critic_module(
                     input_ids=input_ids,
@@ -128,7 +130,9 @@ class DataParallelPPOCritic(BasePPOCritic):
                     values = output[2]
                 else:
                     values = output.logits
-                values = values[:, -response_length - 1 : -1].squeeze(-1)
+                values = values[:, -response_length - 1 : -1]  # (B, L, n_value_heads)
+                if values.shape[-1] == 1:
+                    values = values.squeeze(-1)
             return values
 
     def _optimizer_step(self):
@@ -185,6 +189,8 @@ class DataParallelPPOCritic(BasePPOCritic):
         if "response_mask" in data.batch:
             response_mask = data.batch["response_mask"]
             response_mask = response_mask.to(values.device)
+            if values.dim() > response_mask.dim():
+                response_mask = response_mask.unsqueeze(-1)
             values = values * response_mask  # Only action tokens have values
         return values
 
@@ -246,10 +252,12 @@ class DataParallelPPOCritic(BasePPOCritic):
 
                     loss.backward()
 
+                    # broadcast mask to match vpreds shape (B, L) or (B, L, n_value_heads)
+                    vpred_mask = response_mask.unsqueeze(-1).expand_as(vpreds) if vpreds.dim() > response_mask.dim() else response_mask
                     micro_batch_metrics.update(
                         {
                             "critic/vf_clipfrac": vf_clipfrac.detach().item(),
-                            "critic/vpred_mean": masked_mean(vpreds, response_mask).detach().item(),
+                            "critic/vpred_mean": masked_mean(vpreds, vpred_mask).detach().item(),
                         }
                     )
 

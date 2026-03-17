@@ -1410,7 +1410,7 @@ class CriticWorker(Worker, DistProfilerExtension):
         if self.ulysses_sequence_parallel_size > 1 and hasattr(critic_model_config, "vision_config"):
             critic_model_config.vision_config._attn_implementation = "eager"
 
-        critic_model_config.num_labels = 1
+        critic_model_config.num_labels = override_config.get("n_value_heads", 1)
         # patch for kimi-vl
         if getattr(critic_model_config, "model_type", None) == "kimi_vl":
             critic_model_config.text_config.topk_method = "greedy"
