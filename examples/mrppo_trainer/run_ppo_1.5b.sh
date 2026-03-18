@@ -1,5 +1,6 @@
 set -x
 
+# export CUDA_VISIBLE_DEVICES=0,1,2,3
 export WANDB_API_KEY="810f91e58aa0fd1d03b11c60b0d1cffbb1d941f4"
 export WANDB_ENTITY="rl_agent"
 
@@ -8,6 +9,7 @@ test_files="['$HOME/data/math_reasoning/aime24.parquet','$HOME/data/math_reasoni
 
 PROJECT_NAME=dapo-math-new
 EXPERIMENT_NAME="r1-1.5b-ppo"
+BASE_DIR=$HOME/experiments/$PROJECT_NAME/$EXPERIMENT_NAME
 
 
 N_GPUS_PER_NODE=4
@@ -43,7 +45,7 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.actor.fsdp_config.optimizer_offload=True \
     actor_rollout_ref.actor.use_kl_loss=False \
     actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu=16 \
-    actor_rollout_ref.rollout.tensor_model_parallel_size=4 \
+    actor_rollout_ref.rollout.tensor_model_parallel_size=2 \
     actor_rollout_ref.rollout.name=vllm \
     actor_rollout_ref.rollout.gpu_memory_utilization=0.5 \
     actor_rollout_ref.rollout.calculate_log_probs=True \
@@ -70,6 +72,9 @@ python3 -m verl.trainer.main_ppo \
     trainer.val_only=False \
     trainer.save_freq=50 \
     trainer.test_freq=20 \
+    trainer.default_local_dir=$BASE_DIR/checkpoints \
+    trainer.rollout_data_dir=$BASE_DIR/rollout \
+    trainer.validation_data_dir=$BASE_DIR/validation \
     reward_model.reward_manager=mrppo \
     +reward_model.reward_kwargs.use_answer_reward_only=False \
     "+algorithm.mrppo_reward_keys=$MRPPO_REWARD_KEYS" \
