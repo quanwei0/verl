@@ -6,7 +6,7 @@ export WANDB_ENTITY="rl_agent"
 train_files="['$HOME/data/math_reasoning/dapo_math.parquet']"
 test_files="['$HOME/data/math_reasoning/aime24.parquet','$HOME/data/math_reasoning/aime25.parquet','$HOME/data/math_reasoning/aime26.parquet','$HOME/data/math_reasoning/amc.parquet']"
 
-PROJECT_NAME=dapo-math
+PROJECT_NAME=dapo-math-new
 EXPERIMENT_NAME="r1-1.5b-ppo-answer-only"
 
 
