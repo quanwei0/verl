@@ -1617,7 +1617,9 @@ class RayPPOTrainer:
                             metrics[f"gdpo/{key}/std"] = float(np.std(vals))
                             metrics[f"gdpo/{key}/max"] = float(np.max(vals))
                             metrics[f"gdpo/{key}/min"] = float(np.min(vals))
-                for key in ("answer_reward", "length_reward", "total_reward"):
+                mrppo_reward_keys = OmegaConf.select(self.config, "algorithm.mrppo_reward_keys", default=[])
+                reward_log_keys = set(mrppo_reward_keys) | {"total_reward"}
+                for key in reward_log_keys:
                     if key in batch.non_tensor_batch:
                         vals = np.asarray(batch.non_tensor_batch[key], dtype=np.float32)
                         metrics[f"reward/{key}/mean"] = float(np.mean(vals))

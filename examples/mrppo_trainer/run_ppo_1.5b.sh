@@ -18,6 +18,7 @@ ROLLOUT_IS="token"
 ROLLOUT_IS_THRESHOLD=2.0
 
 N_VALUE_HEADS=1
+MRPPO_REWARD_KEYS="[answer_reward,int_reward,format_reward]"
 
 
 python3 -m verl.trainer.main_ppo \
@@ -71,6 +72,7 @@ python3 -m verl.trainer.main_ppo \
     trainer.test_freq=20 \
     reward_model.reward_manager=mrppo \
     +reward_model.reward_kwargs.use_answer_reward_only=False \
+    "+algorithm.mrppo_reward_keys=$MRPPO_REWARD_KEYS" \
     "actor_rollout_ref.actor.checkpoint.save_contents=[model,hf_model,optimizer,extra]" \
     "critic.checkpoint.save_contents=[model,hf_model,optimizer,extra]" \
     trainer.total_epochs=1 $@
