@@ -7,7 +7,7 @@ train_files="['$HOME/data/math_reasoning/dapo_math.parquet']"
 test_files="['$HOME/data/math_reasoning/aime24.parquet','$HOME/data/math_reasoning/aime25.parquet','$HOME/data/math_reasoning/aime26.parquet','$HOME/data/math_reasoning/amc.parquet']"
 
 PROJECT_NAME=dapo-math
-EXPERIMENT_NAME="r1-1.5b-mrppo"
+EXPERIMENT_NAME="r1-1.5b-ppo-answer-only"
 
 
 N_GPUS_PER_NODE=4
@@ -17,12 +17,11 @@ MAX_RESPONSE_LENGTH=8192
 ROLLOUT_IS="token"
 ROLLOUT_IS_THRESHOLD=2.0
 
-N_VALUE_HEADS=3
-MRPPO_REWARD_KEYS="[answer_reward,int_reward,format_reward]"
+N_VALUE_HEADS=1
 
 
 python3 -m verl.trainer.main_ppo \
-    algorithm.adv_estimator=mrppo \
+    algorithm.adv_estimator=gae \
     algorithm.rollout_correction.rollout_is=${ROLLOUT_IS} \
     algorithm.rollout_correction.rollout_is_threshold=${ROLLOUT_IS_THRESHOLD} \
     data.train_files="$train_files" \
@@ -51,7 +50,6 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.val_kwargs.do_sample=True \
     actor_rollout_ref.rollout.val_kwargs.temperature=0.7 \
     actor_rollout_ref.rollout.val_kwargs.top_p=0.95 \
-    critic.enable=True \
     critic.optim.lr=1e-5 \
     critic.model.use_remove_padding=True \
     critic.model.path=$MODEL_PATH \
@@ -72,8 +70,7 @@ python3 -m verl.trainer.main_ppo \
     trainer.save_freq=50 \
     trainer.test_freq=20 \
     reward_model.reward_manager=mrppo \
-    +reward_model.reward_kwargs.use_answer_reward_only=False \
-    "+algorithm.mrppo_reward_keys=$MRPPO_REWARD_KEYS" \
+    +reward_model.reward_kwargs.use_answer_reward_only=True \
     "actor_rollout_ref.actor.checkpoint.save_contents=[model,hf_model,optimizer,extra]" \
     "critic.checkpoint.save_contents=[model,hf_model,optimizer,extra]" \
     trainer.total_epochs=1 $@

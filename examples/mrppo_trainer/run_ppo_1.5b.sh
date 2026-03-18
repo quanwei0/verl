@@ -3,11 +3,8 @@ set -x
 export WANDB_API_KEY="810f91e58aa0fd1d03b11c60b0d1cffbb1d941f4"
 export WANDB_ENTITY="rl_agent"
 
-train_path=$HOME/data/dapo/dapo-math-17k.parquet
-test_path=$HOME/data/dapo/aime-2024-cleaned.parquet
-
-train_files="['$train_path']"
-test_files="['$test_path']"
+train_files="['$HOME/data/math_reasoning/dapo_math.parquet']"
+test_files="['$HOME/data/math_reasoning/aime24.parquet','$HOME/data/math_reasoning/aime25.parquet','$HOME/data/math_reasoning/aime26.parquet','$HOME/data/math_reasoning/amc.parquet']"
 
 PROJECT_NAME=dapo-math
 EXPERIMENT_NAME="r1-1.5b-ppo"
@@ -16,7 +13,6 @@ EXPERIMENT_NAME="r1-1.5b-ppo"
 N_GPUS_PER_NODE=4
 MODEL_PATH=deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B
 MAX_RESPONSE_LENGTH=8192
-MAX_RESPONSE_LENGTH2=4096
 
 ROLLOUT_IS="token"
 ROLLOUT_IS_THRESHOLD=2.0
@@ -73,9 +69,8 @@ python3 -m verl.trainer.main_ppo \
     trainer.val_only=False \
     trainer.save_freq=50 \
     trainer.test_freq=20 \
-    reward_model.reward_manager=dapo \
-    +reward_model.reward_kwargs.use_length_reward=True \
-    +reward_model.reward_kwargs.max_resp_len=$MAX_RESPONSE_LENGTH2 \
+    reward_model.reward_manager=mrppo \
+    +reward_model.reward_kwargs.use_answer_reward_only=False \
     "actor_rollout_ref.actor.checkpoint.save_contents=[model,hf_model,optimizer,extra]" \
     "critic.checkpoint.save_contents=[model,hf_model,optimizer,extra]" \
     trainer.total_epochs=1 $@
