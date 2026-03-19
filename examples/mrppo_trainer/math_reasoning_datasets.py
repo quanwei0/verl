@@ -148,14 +148,18 @@ def build_dapo_math(split="train"):
     print(f"Loading {data_source} ...", flush=True)
     ds = load_dataset(data_source, split="train")
 
+    _PREFIX = 'Solve the following math problem step by step. The last line of your response should be of the form Answer: $Answer (without quotes) where $Answer is the answer to the problem.\n\n'
+    _SUFFIX = '\n\nRemember to put your answer on its own line after "Answer:".'
+
     def _map(example, idx):
-        question = example["prompt"][0]["content"]
+        raw = example["prompt"][0]["content"]
+        # Strip the conflicting format instructions, keep only the math problem
+        question = raw.removeprefix(_PREFIX).removesuffix(_SUFFIX).strip()
         ground_truth = str(example["reward_model"]["ground_truth"])
-        prompt = question.strip()
         return make_record(idx,
                            data_source="dapo_math",
                            question=question,
-                           prompt=prompt,
+                           prompt=question,
                            ground_truth=ground_truth,
                            split=split)
 

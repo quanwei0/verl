@@ -35,7 +35,7 @@ def int_reward(response_str: str) -> float:
 
 
 def format_reward(response_str: str) -> float:
-    pattern = r"^<think>.*?</think>\n<answer>.*?</answer>$"
+    pattern = r"^(?:<think>)?.*?</think>\n+<answer>.*?</answer>$"
     if (
         re.search(pattern, response_str, re.DOTALL)
         and response_str.count("<answer>") == 1
