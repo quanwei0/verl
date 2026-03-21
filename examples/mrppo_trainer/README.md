@@ -2,9 +2,11 @@
 
 ```bash
 git clone https://github.com/quanwei0/verl
-git checkout mrppo
 
 cd verl
+
+git checkout mrppo
+
 
 conda create -n verl-vllm python=3.12 -y
 conda activate verl-vllm
