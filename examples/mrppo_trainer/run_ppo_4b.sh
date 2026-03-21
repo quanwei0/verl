@@ -5,7 +5,7 @@ export WANDB_API_KEY="810f91e58aa0fd1d03b11c60b0d1cffbb1d941f4"
 export WANDB_ENTITY="rl_agent"
 
 PROJECT_NAME=dapo-math-new
-EXPERIMENT_NAME="r1-7b-ppo"
+EXPERIMENT_NAME="qwen3-4b-ppo"
 
 # export CUDA_VISIBLE_DEVICES=0,1,2,3
 N_GPUS_PER_NODE=8
@@ -14,7 +14,7 @@ BASE_DIR=$HOME/experiments/$PROJECT_NAME/$EXPERIMENT_NAME
 train_files="['$HOME/data/math_reasoning/dapo_math.parquet']"
 test_files="['$HOME/data/math_reasoning/aime24.parquet','$HOME/data/math_reasoning/aime25.parquet','$HOME/data/math_reasoning/aime26.parquet','$HOME/data/math_reasoning/amc.parquet']"
 
-MODEL_PATH=deepseek-ai/DeepSeek-R1-Distill-Qwen-7B
+MODEL_PATH=Qwen/Qwen3-4B-Instruct-2507
 MAX_RESPONSE_LENGTH=8192
 
 ROLLOUT_IS="token"

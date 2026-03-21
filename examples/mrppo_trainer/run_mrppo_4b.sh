@@ -5,7 +5,7 @@ export WANDB_API_KEY="810f91e58aa0fd1d03b11c60b0d1cffbb1d941f4"
 export WANDB_ENTITY="rl_agent"
 
 PROJECT_NAME=dapo-math-new
-EXPERIMENT_NAME="r1-7b-ppo"
+EXPERIMENT_NAME="qwen3-4b-mrppo"
 
 # export CUDA_VISIBLE_DEVICES=0,1,2,3
 N_GPUS_PER_NODE=8
@@ -14,13 +14,13 @@ BASE_DIR=$HOME/experiments/$PROJECT_NAME/$EXPERIMENT_NAME
 train_files="['$HOME/data/math_reasoning/dapo_math.parquet']"
 test_files="['$HOME/data/math_reasoning/aime24.parquet','$HOME/data/math_reasoning/aime25.parquet','$HOME/data/math_reasoning/aime26.parquet','$HOME/data/math_reasoning/amc.parquet']"
 
-MODEL_PATH=deepseek-ai/DeepSeek-R1-Distill-Qwen-7B
+MODEL_PATH=Qwen/Qwen3-4B-Instruct-2507
 MAX_RESPONSE_LENGTH=8192
 
 ROLLOUT_IS="token"
 ROLLOUT_IS_THRESHOLD=2.0
 
-N_VALUE_HEADS=1
+N_VALUE_HEADS=3
 MRPPO_REWARD_KEYS="[answer_reward,int_reward,format_reward]"
 
 SAVE_DATA=false
@@ -34,7 +34,7 @@ fi
 
 
 python3 -m verl.trainer.main_ppo \
-    algorithm.adv_estimator=gae \
+    algorithm.adv_estimator=mrppo \
     algorithm.rollout_correction.rollout_is=${ROLLOUT_IS} \
     algorithm.rollout_correction.rollout_is_threshold=${ROLLOUT_IS_THRESHOLD} \
     data.train_files="$train_files" \
@@ -64,6 +64,7 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.val_kwargs.do_sample=True \
     actor_rollout_ref.rollout.val_kwargs.temperature=0.7 \
     actor_rollout_ref.rollout.val_kwargs.top_p=0.95 \
+    critic.enable=True \
     critic.optim.lr=1e-5 \
     critic.model.use_remove_padding=True \
     critic.model.path=$MODEL_PATH \
