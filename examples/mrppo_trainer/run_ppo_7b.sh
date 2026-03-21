@@ -4,15 +4,15 @@ set -x
 export WANDB_API_KEY="810f91e58aa0fd1d03b11c60b0d1cffbb1d941f4"
 export WANDB_ENTITY="rl_agent"
 
+PROJECT_NAME=dapo-math-new
+EXPERIMENT_NAME="r1-7b-ppo"
+
 # export CUDA_VISIBLE_DEVICES=0,1,2,3
 N_GPUS_PER_NODE=8
 BASE_DIR=$HOME/experiments/$PROJECT_NAME/$EXPERIMENT_NAME
 
 train_files="['$HOME/data/math_reasoning/dapo_math.parquet']"
 test_files="['$HOME/data/math_reasoning/aime24.parquet','$HOME/data/math_reasoning/aime25.parquet','$HOME/data/math_reasoning/aime26.parquet','$HOME/data/math_reasoning/amc.parquet']"
-
-PROJECT_NAME=dapo-math-new
-EXPERIMENT_NAME="r1-7b-ppo"
 
 MODEL_PATH=deepseek-ai/DeepSeek-R1-Distill-Qwen-7B
 MAX_RESPONSE_LENGTH=8192
@@ -50,6 +50,7 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.name=vllm \
     actor_rollout_ref.rollout.gpu_memory_utilization=0.5 \
     actor_rollout_ref.rollout.calculate_log_probs=True \
+    actor_rollout_ref.rollout.checkpoint_engine.update_weights_bucket_megabytes=4096 \
     actor_rollout_ref.rollout.val_kwargs.n=16 \
     actor_rollout_ref.rollout.val_kwargs.do_sample=True \
     actor_rollout_ref.rollout.val_kwargs.temperature=0.7 \
