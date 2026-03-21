@@ -4,15 +4,15 @@ set -x
 export WANDB_API_KEY="810f91e58aa0fd1d03b11c60b0d1cffbb1d941f4"
 export WANDB_ENTITY="rl_agent"
 
+PROJECT_NAME=dapo-math-new
+EXPERIMENT_NAME="r1-1.5b-ppo-answer-only"
+
 # export CUDA_VISIBLE_DEVICES=0,1,2,3
 N_GPUS_PER_NODE=4
 BASE_DIR=$HOME/experiments/$PROJECT_NAME/$EXPERIMENT_NAME
 
 train_files="['$HOME/data/math_reasoning/dapo_math.parquet']"
 test_files="['$HOME/data/math_reasoning/aime24.parquet','$HOME/data/math_reasoning/aime25.parquet','$HOME/data/math_reasoning/aime26.parquet','$HOME/data/math_reasoning/amc.parquet']"
-
-PROJECT_NAME=dapo-math-new
-EXPERIMENT_NAME="r1-1.5b-ppo-answer-only"
 
 MODEL_PATH=deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B
 MAX_RESPONSE_LENGTH=8192
