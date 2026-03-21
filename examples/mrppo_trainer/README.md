@@ -11,7 +11,7 @@ git checkout mrppo
 conda create -n verl-vllm python=3.12 -y
 conda activate verl-vllm
 pip install -e ".[vllm]"
-
+pip install flash-attn --no-build-isolation
 ```
 
 ## Data Processing
