@@ -30,6 +30,10 @@ if [[ "$SAVE_DATA" == true ]]; then
     SAVE_ARGS+=(trainer.default_local_dir=$BASE_DIR/checkpoints)
     SAVE_ARGS+=(trainer.rollout_data_dir=$BASE_DIR/rollout)
     SAVE_ARGS+=(trainer.validation_data_dir=$BASE_DIR/validation)
+else
+    SAVE_ARGS+=(trainer.default_local_dir=null)
+    SAVE_ARGS+=(trainer.rollout_data_dir=null)
+    SAVE_ARGS+=(trainer.validation_data_dir=null)
 fi
 
 
