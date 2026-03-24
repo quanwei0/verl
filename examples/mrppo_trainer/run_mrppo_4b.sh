@@ -34,6 +34,7 @@ else
     SAVE_ARGS+=(trainer.default_local_dir=null)
     SAVE_ARGS+=(trainer.rollout_data_dir=null)
     SAVE_ARGS+=(trainer.validation_data_dir=null)
+    SAVE_ARGS+=(trainer.resume_mode=disable)
 fi
 
 
