@@ -31,11 +31,9 @@ if [[ "$SAVE_DATA" == true ]]; then
     SAVE_ARGS+=(trainer.default_local_dir=$BASE_DIR/checkpoints)
     SAVE_ARGS+=(trainer.rollout_data_dir=$BASE_DIR/rollout)
     SAVE_ARGS+=(trainer.validation_data_dir=$BASE_DIR/validation)
+    SAVE_ARGS+=(trainer.save_freq=50)
 else
-    SAVE_ARGS+=(trainer.default_local_dir=null)
-    SAVE_ARGS+=(trainer.rollout_data_dir=null)
-    SAVE_ARGS+=(trainer.validation_data_dir=null)
-    SAVE_ARGS+=(trainer.resume_mode=disable)
+    SAVE_ARGS+=(trainer.save_freq=-1)
 fi
 
 
@@ -79,7 +77,6 @@ python3 -m verl.trainer.main_ppo \
     trainer.nnodes=1 \
     trainer.val_before_train=True \
     trainer.val_only=False \
-    trainer.save_freq=50 \
     trainer.test_freq=20 \
     "${SAVE_ARGS[@]}" \
     reward_model.reward_manager=mrppo \
