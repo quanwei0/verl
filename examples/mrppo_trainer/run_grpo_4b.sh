@@ -17,7 +17,7 @@ test_files="['$HOME/data/math_reasoning/aime24.parquet','$HOME/data/math_reasoni
 MODEL_PATH=Qwen/Qwen3-4B-Instruct-2507
 MAX_RESPONSE_LENGTH=8192
 
-ROLLOUT_N=8
+ROLLOUT_N=4
 
 ROLLOUT_IS="token"
 ROLLOUT_IS_THRESHOLD=2.0
