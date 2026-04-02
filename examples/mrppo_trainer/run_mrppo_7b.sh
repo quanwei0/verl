@@ -5,7 +5,7 @@ export WANDB_API_KEY="810f91e58aa0fd1d03b11c60b0d1cffbb1d941f4"
 export WANDB_ENTITY="rl_agent"
 
 PROJECT_NAME=dapo-math-new
-EXPERIMENT_NAME="r1-7b-mrppo"
+EXPERIMENT_NAME="r1-7b-mrppo-1-0.5-0.2"
 
 # export CUDA_VISIBLE_DEVICES=0,1,2,3
 N_GPUS_PER_NODE=8
@@ -22,7 +22,7 @@ ROLLOUT_IS_THRESHOLD=2.0
 
 N_VALUE_HEADS=3
 MRPPO_REWARD_KEYS="[answer_reward,int_reward,format_reward]"
-MRPPO_REWARD_VALUES="[1,1,1]"
+MRPPO_REWARD_VALUES="[1,0.5,0.2]"
 
 SAVE_DATA=false
 
