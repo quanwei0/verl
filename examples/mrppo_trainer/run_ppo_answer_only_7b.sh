@@ -22,6 +22,7 @@ ROLLOUT_IS_THRESHOLD=2.0
 
 N_VALUE_HEADS=1
 MRPPO_REWARD_KEYS="[answer_reward,int_reward,format_reward]"
+MRPPO_REWARD_VALUES="[1,1,1]"
 
 SAVE_DATA=false
 
@@ -58,7 +59,7 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.actor.fsdp_config.optimizer_offload=True \
     actor_rollout_ref.actor.use_kl_loss=False \
     actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu=16 \
-    actor_rollout_ref.rollout.tensor_model_parallel_size=2 \
+    actor_rollout_ref.rollout.tensor_model_parallel_size=1 \
     actor_rollout_ref.rollout.name=vllm \
     actor_rollout_ref.rollout.gpu_memory_utilization=0.5 \
     actor_rollout_ref.rollout.calculate_log_probs=True \
@@ -89,6 +90,7 @@ python3 -m verl.trainer.main_ppo \
     reward_model.reward_manager=mrppo \
     +reward_model.reward_kwargs.use_answer_reward_only=True \
     "+algorithm.mrppo_reward_keys=$MRPPO_REWARD_KEYS" \
+    "+algorithm.mrppo_reward_values=$MRPPO_REWARD_VALUES" \
     "actor_rollout_ref.actor.checkpoint.save_contents=[model,hf_model,optimizer,extra]" \
     "critic.checkpoint.save_contents=[model,hf_model,optimizer,extra]" \
     trainer.total_epochs=1 $@

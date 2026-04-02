@@ -24,24 +24,24 @@ def extract_xml_answer(text: str) -> str:
     return match.group(1).strip() if match else ""
 
 
-def answer_reward(response_str: str, ground_truth: str) -> float:
+def answer_reward(response_str: str, ground_truth: str, value: float = 1.0) -> float:
     extracted = extract_xml_answer(response_str)
-    return 1.0 if extracted == str(ground_truth) else 0.0
+    return value if extracted == str(ground_truth) else 0.0
 
 
-def int_reward(response_str: str) -> float:
+def int_reward(response_str: str, value: float = 1.0) -> float:
     extracted = extract_xml_answer(response_str)
-    return 1.0 if extracted.isdigit() else 0.0
+    return value if extracted.isdigit() else 0.0
 
 
-def format_reward(response_str: str) -> float:
+def format_reward(response_str: str, value: float = 1.0) -> float:
     pattern = r"^(?:<think>)?.*?</think>\n+<answer>.*?</answer>$"
     if (
         re.search(pattern, response_str, re.DOTALL)
         and response_str.count("<answer>") == 1
         and response_str.count("</answer>") == 1
     ):
-        return 1.0
+        return value
     return 0.0
 
 
@@ -57,6 +57,8 @@ class MRPPORewardManager(RewardManagerBase):
     def __init__(self, config, tokenizer, compute_score=None, reward_router_address=None, reward_model_tokenizer=None):
         super().__init__(config, tokenizer, compute_score)
         self.use_answer_reward_only = config.reward.get("reward_kwargs", {}).get("use_answer_reward_only", False)
+        reward_values = config.get("algorithm", {}).get("mrppo_reward_values", [1.0, 1.0, 1.0])
+        self.v_answer, self.v_int, self.v_format = reward_values[0], reward_values[1], reward_values[2]
 
     async def run_single(self, data: DataProto) -> dict:
         assert len(data) == 1, "Only support single data item"
@@ -72,9 +74,9 @@ class MRPPORewardManager(RewardManagerBase):
             None, lambda: self.tokenizer.decode(valid_response_ids, skip_special_tokens=True)
         )
 
-        r_answer = answer_reward(response_str, ground_truth)
-        r_int = int_reward(response_str)
-        r_format = format_reward(response_str)
+        r_answer = answer_reward(response_str, ground_truth, self.v_answer)
+        r_int = int_reward(response_str, self.v_int)
+        r_format = format_reward(response_str, self.v_format)
 
         if self.use_answer_reward_only:
             reward = r_answer
