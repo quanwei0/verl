@@ -15,7 +15,7 @@
 from .registry import get_reward_manager_cls, register  # noqa: I001
 from .dapo import DAPORewardManager
 from .gdpo import GDPORewardManager
-from .rwppo import RWPPORewardManager
+from .rwpo import RWPORewardManager
 from .naive import NaiveRewardManager
 from .limited import RateLimitedRewardManager
 from .remote import RemoteRewardManager
@@ -23,7 +23,7 @@ from .remote import RemoteRewardManager
 __all__ = [
     "DAPORewardManager",
     "GDPORewardManager",
-    "RWPPORewardManager",
+    "RWPORewardManager",
     "NaiveRewardManager",
     "RateLimitedRewardManager",
     "RemoteRewardManager",

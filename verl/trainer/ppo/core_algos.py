@@ -109,6 +109,7 @@ class AdvantageEstimator(str, Enum):
     TIR_OPTIMAL_TOKEN_BASELINE = "tir_optimal_token_baseline"
     GDPO = "gdpo"
     RWPPO = "rwppo"
+    RWGRPO = "rwgrpo"
 
 
 ADV_ESTIMATOR_REGISTRY: dict[str, Any] = {}
@@ -376,6 +377,73 @@ def compute_grpo_outcome_advantage(
             else:
                 scores[i] = scores[i] - id2mean[index[i]]
         scores = scores.unsqueeze(-1) * response_mask
+
+    return scores, scores
+
+
+@register_adv_est(AdvantageEstimator.RWGRPO)  # or simply: @register_adv_est("rwgrpo")
+def compute_rwgrpo_outcome_advantage(
+    token_level_rewards: torch.Tensor,
+    response_mask: torch.Tensor,
+    index: np.ndarray,
+    epsilon: float = 1e-6,
+    norm_adv_by_std_in_grpo: bool = True,
+    config: Optional[AlgoConfig] = None,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Multi-reward GRPO (RWGRPO). Applies GRPO-style group-relative normalization
+    independently per reward head, then sums the normalized advantages across heads.
+    No critic is required.
+
+    Args:
+        token_level_rewards: `(torch.Tensor)`
+            shape is (bs, response_length, n_reward_heads)
+        response_mask: `(torch.Tensor)`
+            shape is (bs, response_length)
+        index: `(np.ndarray)`
+            index array for grouping
+        epsilon: `(float)`
+            small value to avoid division by zero
+        norm_adv_by_std_in_grpo: `(bool)`
+            whether to scale the advantage by group std per head
+        config: `(Optional[AlgoConfig])`
+            algorithm configuration object
+
+    Returns:
+        advantages: `(torch.Tensor)`
+            shape is (bs, response_length)
+        returns: `(torch.Tensor)`
+            shape is (bs, response_length)
+    """
+    # Sum over response length to get per-head outcome score: (bs, n_reward_heads)
+    scores = token_level_rewards.sum(dim=1)
+
+    n_heads = scores.shape[-1]
+    id2score = defaultdict(list)
+    id2mean = {}
+    id2std = {}
+
+    with torch.no_grad():
+        bsz = scores.shape[0]
+        for i in range(bsz):
+            id2score[index[i]].append(scores[i])  # each element: (n_reward_heads,)
+        for idx in id2score:
+            if len(id2score[idx]) == 1:
+                id2mean[idx] = torch.zeros(n_heads, device=scores.device, dtype=scores.dtype)
+                id2std[idx] = torch.ones(n_heads, device=scores.device, dtype=scores.dtype)
+            elif len(id2score[idx]) > 1:
+                scores_tensor = torch.stack(id2score[idx])  # (group_size, n_reward_heads)
+                id2mean[idx] = torch.mean(scores_tensor, dim=0)  # (n_reward_heads,)
+                id2std[idx] = torch.std(scores_tensor, dim=0)    # (n_reward_heads,)
+            else:
+                raise ValueError(f"no score in prompt index: {idx}")
+        # Normalize each reward head independently (GRPO-style), then sum across heads
+        for i in range(bsz):
+            if norm_adv_by_std_in_grpo:
+                scores[i] = (scores[i] - id2mean[index[i]]) / (id2std[index[i]] + epsilon)
+            else:
+                scores[i] = scores[i] - id2mean[index[i]]
+        # scores: (bs, n_reward_heads) -> sum across heads -> (bs,) -> broadcast to tokens
+        scores = scores.sum(dim=-1).unsqueeze(-1) * response_mask
 
     return scores, scores
 

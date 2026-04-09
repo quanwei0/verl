@@ -22,8 +22,8 @@ ROLLOUT_N=4
 ROLLOUT_IS="token"
 ROLLOUT_IS_THRESHOLD=2.0
 
-RWPPO_REWARD_KEYS="[answer_reward,int_reward,format_reward]"
-RWPPO_REWARD_VALUES="[1,1,1]"
+RWPO_REWARD_KEYS="[answer_reward,int_reward,format_reward]"
+RWPO_REWARD_VALUES="[1,1,1]"
 
 SAVE_DATA=false
 
@@ -71,6 +71,7 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.val_kwargs.temperature=0.7 \
     actor_rollout_ref.rollout.val_kwargs.top_p=0.95 \
     algorithm.use_kl_in_reward=False \
+    critic.enable=False \
     trainer.critic_warmup=0 \
     trainer.logger='["console","wandb"]' \
     trainer.project_name="$PROJECT_NAME" \
@@ -81,9 +82,9 @@ python3 -m verl.trainer.main_ppo \
     trainer.val_only=False \
     trainer.test_freq=20 \
     "${SAVE_ARGS[@]}" \
-    reward_model.reward_manager=rwppo \
+    reward_model.reward_manager=rwpo \
     +reward_model.reward_kwargs.use_answer_reward_only=False \
-    "+algorithm.rwppo_reward_keys=$RWPPO_REWARD_KEYS" \
-    "+algorithm.rwppo_reward_values=$RWPPO_REWARD_VALUES" \
+    "+algorithm.rwpo_reward_keys=$RWPO_REWARD_KEYS" \
+    "+algorithm.rwpo_reward_values=$RWPO_REWARD_VALUES" \
     "actor_rollout_ref.actor.checkpoint.save_contents=[model,hf_model,optimizer,extra]" \
     trainer.total_epochs=1 $@

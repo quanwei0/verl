@@ -197,6 +197,15 @@ def compute_advantage(
         )
         data.batch["advantages"] = advantages
         data.batch["returns"] = returns
+    elif adv_estimator == AdvantageEstimator.RWGRPO:
+        advantages, returns = core_algos.get_adv_estimator_fn("rwgrpo")(
+            token_level_rewards=data.batch["token_level_rewards"],
+            response_mask=data.batch["response_mask"],
+            index=data.non_tensor_batch["uid"],
+            norm_adv_by_std_in_grpo=norm_adv_by_std_in_grpo,
+        )
+        data.batch["advantages"] = advantages
+        data.batch["returns"] = returns
     else:
         # handle all other adv estimator type other than GAE and GRPO
         adv_estimator_fn = core_algos.get_adv_estimator_fn(adv_estimator)
@@ -1466,22 +1475,22 @@ class RayPPOTrainer:
 
                         # compute rewards. apply_kl_penalty if available
                         assert not (
-                            self.config.algorithm.adv_estimator == AdvantageEstimator.RWPPO
+                            self.config.algorithm.adv_estimator in (AdvantageEstimator.RWPPO, AdvantageEstimator.RWGRPO)
                             and self.config.algorithm.use_kl_in_reward
-                        ), "rwppo does not support use_kl_in_reward"
+                        ), "rwppo/rwgrpo does not support use_kl_in_reward"
                         if self.config.algorithm.use_kl_in_reward:
                             batch, kl_metrics = apply_kl_penalty(
                                 batch, kl_ctrl=self.kl_ctrl_in_reward, kl_penalty=self.config.algorithm.kl_penalty
                             )
                             metrics.update(kl_metrics)
                         else:
-                            if self.config.algorithm.adv_estimator == "rwppo":
+                            if self.config.algorithm.adv_estimator in ("rwppo", "rwgrpo"):
                                 token_level_scores = batch.batch["token_level_scores"]  # (B, L)
                                 eos_mask = (token_level_scores != 0).float()  # (B, L)
                                 # each key is a per-sample scalar reward in non_tensor_batch, placed at EOS
-                                rwppo_reward_keys = OmegaConf.select(self.config, "algorithm.rwppo_reward_keys", default=[])
+                                rwpo_reward_keys = OmegaConf.select(self.config, "algorithm.rwpo_reward_keys", default=[])
                                 reward_tensors = []
-                                for key in rwppo_reward_keys:
+                                for key in rwpo_reward_keys:
                                     r = torch.tensor(
                                         batch.non_tensor_batch[key],
                                         dtype=torch.float32,
@@ -1490,7 +1499,7 @@ class RayPPOTrainer:
                                     reward_tensors.append(eos_mask * r.unsqueeze(-1))  # (B, L)
                                 batch.batch["token_level_rewards"] = torch.stack(
                                     reward_tensors, dim=-1
-                                )  # (B, L, n_value_heads)
+                                )  # (B, L, n_reward_heads)
                             else:
                                 batch.batch["token_level_rewards"] = batch.batch["token_level_scores"]
 
@@ -1617,9 +1626,9 @@ class RayPPOTrainer:
                             metrics[f"gdpo/{key}/std"] = float(np.std(vals))
                             metrics[f"gdpo/{key}/max"] = float(np.max(vals))
                             metrics[f"gdpo/{key}/min"] = float(np.min(vals))
-                # RWPPO per-component reward metrics
-                rwppo_reward_keys = OmegaConf.select(self.config, "algorithm.rwppo_reward_keys", default=[])
-                reward_log_keys = set(rwppo_reward_keys) | {"total_reward"}
+                # RWPO per-component reward metrics
+                rwpo_reward_keys = OmegaConf.select(self.config, "algorithm.rwpo_reward_keys", default=[])
+                reward_log_keys = set(rwpo_reward_keys) | {"total_reward"}
                 for key in reward_log_keys:
                     if key in batch.non_tensor_batch:
                         vals = np.asarray(batch.non_tensor_batch[key], dtype=np.float32)
