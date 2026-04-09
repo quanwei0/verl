@@ -174,8 +174,8 @@ def compute_advantage(
                 config.pf_ppo.get("reweight_method"),
                 config.pf_ppo.get("weight_pow"),
             )
-    elif adv_estimator == AdvantageEstimator.MRPPO:
-        advantages, returns = core_algos.get_adv_estimator_fn("mrppo")(
+    elif adv_estimator == AdvantageEstimator.RWPPO:
+        advantages, returns = core_algos.get_adv_estimator_fn("rwppo")(
             token_level_rewards=data.batch["token_level_rewards"],
             values=data.batch["values"],
             response_mask=data.batch["response_mask"],
@@ -1466,22 +1466,22 @@ class RayPPOTrainer:
 
                         # compute rewards. apply_kl_penalty if available
                         assert not (
-                            self.config.algorithm.adv_estimator == AdvantageEstimator.MRPPO
+                            self.config.algorithm.adv_estimator == AdvantageEstimator.RWPPO
                             and self.config.algorithm.use_kl_in_reward
-                        ), "mrppo does not support use_kl_in_reward"
+                        ), "rwppo does not support use_kl_in_reward"
                         if self.config.algorithm.use_kl_in_reward:
                             batch, kl_metrics = apply_kl_penalty(
                                 batch, kl_ctrl=self.kl_ctrl_in_reward, kl_penalty=self.config.algorithm.kl_penalty
                             )
                             metrics.update(kl_metrics)
                         else:
-                            if self.config.algorithm.adv_estimator == "mrppo":
+                            if self.config.algorithm.adv_estimator == "rwppo":
                                 token_level_scores = batch.batch["token_level_scores"]  # (B, L)
                                 eos_mask = (token_level_scores != 0).float()  # (B, L)
                                 # each key is a per-sample scalar reward in non_tensor_batch, placed at EOS
-                                mrppo_reward_keys = OmegaConf.select(self.config, "algorithm.mrppo_reward_keys", default=[])
+                                rwppo_reward_keys = OmegaConf.select(self.config, "algorithm.rwppo_reward_keys", default=[])
                                 reward_tensors = []
-                                for key in mrppo_reward_keys:
+                                for key in rwppo_reward_keys:
                                     r = torch.tensor(
                                         batch.non_tensor_batch[key],
                                         dtype=torch.float32,
@@ -1617,9 +1617,9 @@ class RayPPOTrainer:
                             metrics[f"gdpo/{key}/std"] = float(np.std(vals))
                             metrics[f"gdpo/{key}/max"] = float(np.max(vals))
                             metrics[f"gdpo/{key}/min"] = float(np.min(vals))
-                # MRPPO per-component reward metrics
-                mrppo_reward_keys = OmegaConf.select(self.config, "algorithm.mrppo_reward_keys", default=[])
-                reward_log_keys = set(mrppo_reward_keys) | {"total_reward"}
+                # RWPPO per-component reward metrics
+                rwppo_reward_keys = OmegaConf.select(self.config, "algorithm.rwppo_reward_keys", default=[])
+                reward_log_keys = set(rwppo_reward_keys) | {"total_reward"}
                 for key in reward_log_keys:
                     if key in batch.non_tensor_batch:
                         vals = np.asarray(batch.non_tensor_batch[key], dtype=np.float32)

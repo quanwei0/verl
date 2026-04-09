@@ -5,7 +5,7 @@ export WANDB_API_KEY="810f91e58aa0fd1d03b11c60b0d1cffbb1d941f4"
 export WANDB_ENTITY="rl_agent"
 
 PROJECT_NAME=dapo-math-new
-EXPERIMENT_NAME="r1-8b-mrppo"
+EXPERIMENT_NAME="r1-14b-rwppo"
 
 # export CUDA_VISIBLE_DEVICES=0,1,2,3
 N_GPUS_PER_NODE=8
@@ -14,15 +14,15 @@ BASE_DIR=$HOME/experiments/$PROJECT_NAME/$EXPERIMENT_NAME
 train_files="['$HOME/data/math_reasoning/dapo_math.parquet']"
 test_files="['$HOME/data/math_reasoning/aime24.parquet','$HOME/data/math_reasoning/aime25.parquet','$HOME/data/math_reasoning/aime26.parquet','$HOME/data/math_reasoning/amc.parquet']"
 
-MODEL_PATH=deepseek-ai/DeepSeek-R1-0528-Qwen3-8B
+MODEL_PATH=deepseek-ai/DeepSeek-R1-Distill-Qwen-14B
 MAX_RESPONSE_LENGTH=8192
 
 ROLLOUT_IS="token"
 ROLLOUT_IS_THRESHOLD=2.0
 
 N_VALUE_HEADS=3
-MRPPO_REWARD_KEYS="[answer_reward,int_reward,format_reward]"
-MRPPO_REWARD_VALUES="[1,1,1]"
+RWPPO_REWARD_KEYS="[answer_reward,int_reward,format_reward]"
+RWPPO_REWARD_VALUES="[1,1,1]"
 
 SAVE_DATA=false
 
@@ -38,7 +38,7 @@ fi
 
 
 python3 -m verl.trainer.main_ppo \
-    algorithm.adv_estimator=mrppo \
+    algorithm.adv_estimator=rwppo \
     algorithm.rollout_correction.rollout_is=${ROLLOUT_IS} \
     algorithm.rollout_correction.rollout_is_threshold=${ROLLOUT_IS_THRESHOLD} \
     data.train_files="$train_files" \
@@ -83,15 +83,15 @@ python3 -m verl.trainer.main_ppo \
     trainer.project_name="$PROJECT_NAME" \
     trainer.experiment_name="$EXPERIMENT_NAME" \
     trainer.n_gpus_per_node=$N_GPUS_PER_NODE \
-    trainer.nnodes=1 \
+    trainer.nnodes=2 \
     trainer.val_before_train=True \
     trainer.val_only=False \
     trainer.test_freq=20 \
     "${SAVE_ARGS[@]}" \
-    reward_model.reward_manager=mrppo \
+    reward_model.reward_manager=rwppo \
     +reward_model.reward_kwargs.use_answer_reward_only=False \
-    "+algorithm.mrppo_reward_keys=$MRPPO_REWARD_KEYS" \
-    "+algorithm.mrppo_reward_values=$MRPPO_REWARD_VALUES" \
+    "+algorithm.rwppo_reward_keys=$RWPPO_REWARD_KEYS" \
+    "+algorithm.rwppo_reward_values=$RWPPO_REWARD_VALUES" \
     "actor_rollout_ref.actor.checkpoint.save_contents=[model,hf_model,optimizer,extra]" \
     "critic.checkpoint.save_contents=[model,hf_model,optimizer,extra]" \
     trainer.total_epochs=1 $@

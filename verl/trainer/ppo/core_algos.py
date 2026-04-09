@@ -108,7 +108,7 @@ class AdvantageEstimator(str, Enum):
     OPTIMAL_TOKEN_BASELINE = "optimal_token_baseline"
     TIR_OPTIMAL_TOKEN_BASELINE = "tir_optimal_token_baseline"
     GDPO = "gdpo"
-    MRPPO = "mrppo"
+    RWPPO = "rwppo"
 
 
 ADV_ESTIMATOR_REGISTRY: dict[str, Any] = {}
@@ -264,15 +264,15 @@ def compute_gae_advantage_return(
     return advantages, returns
 
 
-@register_adv_est("mrppo")
-def compute_mrppo_advantage_return(
+@register_adv_est("rwppo")
+def compute_rwppo_advantage_return(
     token_level_rewards: torch.Tensor,
     values: torch.Tensor,
     response_mask: torch.Tensor,
     gamma: torch.Tensor,
     lam: torch.Tensor,
 ):
-    """Multi-reward PPO (MRPPO) GAE. Supports multi-head rewards and values.
+    """Multi-reward PPO (RWPPO) GAE. Supports multi-head rewards and values.
 
     Args:
         token_level_rewards: shape (bs, response_length, n_value_heads)

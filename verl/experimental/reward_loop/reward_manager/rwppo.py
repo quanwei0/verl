@@ -45,19 +45,19 @@ def format_reward(response_str: str, value: float = 1.0) -> float:
     return 0.0
 
 
-@register("mrppo")
-class MRPPORewardManager(RewardManagerBase):
-    """MRPPO Reward Manager.
+@register("rwppo")
+class RWPPORewardManager(RewardManagerBase):
+    """RWPPO Reward Manager.
 
     Computes three separate reward components (answer_reward, int_reward,
     format_reward) to support multi-reward PPO advantage estimation via
-    algorithm.mrppo_reward_keys.
+    algorithm.rwppo_reward_keys.
     """
 
     def __init__(self, config, tokenizer, compute_score=None, reward_router_address=None, reward_model_tokenizer=None):
         super().__init__(config, tokenizer, compute_score)
         self.use_answer_reward_only = config.reward.get("reward_kwargs", {}).get("use_answer_reward_only", False)
-        reward_values = config.get("algorithm", {}).get("mrppo_reward_values", [1.0, 1.0, 1.0])
+        reward_values = config.get("algorithm", {}).get("rwppo_reward_values", [1.0, 1.0, 1.0])
         self.v_answer, self.v_int, self.v_format = reward_values[0], reward_values[1], reward_values[2]
 
     async def run_single(self, data: DataProto) -> dict:
