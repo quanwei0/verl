@@ -5,7 +5,7 @@ export WANDB_API_KEY="810f91e58aa0fd1d03b11c60b0d1cffbb1d941f4"
 export WANDB_ENTITY="rl_agent"
 
 PROJECT_NAME=dapo-math-new
-EXPERIMENT_NAME="r1-7b-grpo"
+EXPERIMENT_NAME="r1-7b-grpo-1-0.5-0.2"
 
 # export CUDA_VISIBLE_DEVICES=0,1,2,3
 N_GPUS_PER_NODE=8
@@ -17,7 +17,7 @@ test_files="['$HOME/data/math_reasoning/aime24.parquet','$HOME/data/math_reasoni
 MODEL_PATH=deepseek-ai/DeepSeek-R1-Distill-Qwen-7B
 MAX_RESPONSE_LENGTH=8192
 
-ROLLOUT_N=4
+ROLLOUT_N=8
 
 ROLLOUT_IS="token"
 ROLLOUT_IS_THRESHOLD=2.0
