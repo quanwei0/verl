@@ -23,7 +23,7 @@ ROLLOUT_IS="token"
 ROLLOUT_IS_THRESHOLD=2.0
 
 RWPO_REWARD_KEYS="[answer_reward,int_reward,format_reward]"
-RWPO_REWARD_VALUES="[1,1,1]"
+RWPO_REWARD_VALUES="[1,0.5,0.2]"
 
 SAVE_DATA=false
 
