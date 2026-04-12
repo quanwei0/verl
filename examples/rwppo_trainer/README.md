@@ -5,7 +5,7 @@ git clone https://github.com/quanwei0/verl
 
 cd verl
 
-git checkout mrppo
+git checkout rwppo
 
 
 conda create -n verl-vllm python=3.12 -y
