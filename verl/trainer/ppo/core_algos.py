@@ -442,10 +442,14 @@ def compute_rwgrpo_outcome_advantage(
                 scores[i] = (scores[i] - id2mean[index[i]]) / (id2std[index[i]] + epsilon)
             else:
                 scores[i] = scores[i] - id2mean[index[i]]
-        # scores: (bs, n_reward_heads) -> sum across heads -> (bs,) -> broadcast to tokens
-        scores = scores.sum(dim=-1).unsqueeze(-1) * response_mask
-        # batch normalization across the whole batch (REINFORCE++ style)
-        scores = verl_F.masked_whiten(scores, response_mask) * response_mask
+        # scores: (bs, n_reward_heads) -> sum across heads -> (bs,)
+        scores = scores.sum(dim=-1)  # (bs,)
+        # batch normalization on scalars before broadcasting to tokens (REINFORCE++ style)
+        scores_mean = scores.mean()
+        scores_std = scores.std()
+        scores = (scores - scores_mean) / (scores_std + 1e-8)
+        # broadcast normalized scalar to tokens
+        scores = scores.unsqueeze(-1) * response_mask
 
     return scores, scores
 
